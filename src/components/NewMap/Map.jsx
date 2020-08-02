@@ -150,10 +150,14 @@ let dummyRequests = [
   },
 ];
 
+const noInternetPopup = () => {
+  console.log("sorry no internet please try again");
+};
+
 const Cards = ({ position, detail }) => {
   return (
     <>
-      <div onClick={() => console.log("expand")}>
+      <div>
         Name: {detail.name} <br />
         MSG: {detail.msg}
       </div>
@@ -161,7 +165,7 @@ const Cards = ({ position, detail }) => {
   );
 }; //checked
 
-const HelpingInterface = ({ handleCancelHelp, requestDoc }) => {
+const HelpingInterface = ({ handleCancelHelp, requestDoc, isOnline }) => {
   return (
     <Card style={{ marginBottom: "5%" }}>
       <CardActionArea>
@@ -209,7 +213,9 @@ const HelpingInterface = ({ handleCancelHelp, requestDoc }) => {
       </CardActionArea>
       <CardActions>
         <Button
-          onClick={() => handleCancelHelp(requestDoc)}
+          onClick={() => {
+            isOnline ? handleCancelHelp(requestDoc) : noInternetPopup();
+          }}
           variant="contained"
           size="large"
           color="secondary"
@@ -237,6 +243,7 @@ const RequestMarkers = ({
   dummyRequests,
   user,
   location,
+  isOnline,
 }) => {
   const classes = useStyles();
   const [requests, setRequests] = useState([...requestDocs]);
@@ -347,7 +354,11 @@ const RequestMarkers = ({
             </CardActionArea>
             <CardActions>
               <Button
-                onClick={() => handleHelpingOthers(requestDoc, user, location)}
+                onClick={() => {
+                  isOnline
+                    ? handleHelpingOthers(requestDoc, user, location)
+                    : noInternetPopup();
+                }}
                 variant="contained"
                 size="large"
                 color="secondary"
@@ -382,7 +393,7 @@ const RequestCards = ({ requestDocs }) => {
   );
 };
 
-const RequesterMarker = ({ requestDoc, userLocation }) => {
+const RequesterMarker = ({ requestDoc, userLocation, isOnline }) => {
   // the person whom you are helping
   const [requester, setRequester] = useState(null);
   const [leafletref, setLeafletref] = useState(null);
@@ -438,8 +449,12 @@ const RequesterMarker = ({ requestDoc, userLocation }) => {
           {leafletref == null ? (
             <Button
               onClick={() => {
-                let x = returnOut(requestDoc).addTo(map);
-                setLeafletref(x);
+                if (isOnline) {
+                  let x = returnOut(requestDoc).addTo(map);
+                  setLeafletref(x);
+                } else {
+                  noInternetPopup();
+                }
               }}
             >
               Show Directions
@@ -449,8 +464,12 @@ const RequesterMarker = ({ requestDoc, userLocation }) => {
               {" "}
               <Button
                 onClick={() => {
-                  map.removeControl(leafletref);
-                  setLeafletref(null);
+                  if (isOnline) {
+                    map.removeControl(leafletref);
+                    setLeafletref(null);
+                  } else {
+                    noInternetPopup();
+                  }
                 }}
               >
                 Hide Directions
@@ -517,7 +536,7 @@ const RequesterCard = ({ requestDoc }) => {
     return <></>;
   }
 };
-const HelperMarker = ({ requestDoc, userLocation }) => {
+const HelperMarker = ({ requestDoc, userLocation, isOnline }) => {
   const { map } = useLeaflet();
   const [helper, setHelper] = useState(null);
   const [leafletref, setLeafletref] = useState(null);
@@ -573,8 +592,12 @@ const HelperMarker = ({ requestDoc, userLocation }) => {
           {leafletref == null ? (
             <button
               onClick={() => {
-                let x = returnOut(requestDoc).addTo(map);
-                setLeafletref(x);
+                if (isOnline) {
+                  let x = returnOut(requestDoc).addTo(map);
+                  setLeafletref(x);
+                } else {
+                  noInternetPopup();
+                }
               }}
             >
               Show Directions
@@ -584,8 +607,12 @@ const HelperMarker = ({ requestDoc, userLocation }) => {
               {" "}
               <button
                 onClick={() => {
-                  map.removeControl(leafletref);
-                  setLeafletref(null);
+                  if (isOnline) {
+                    map.removeControl(leafletref);
+                    setLeafletref(null);
+                  } else {
+                    noInternetPopup();
+                  }
                 }}
               >
                 Hide Directions
@@ -600,7 +627,11 @@ const HelperMarker = ({ requestDoc, userLocation }) => {
   }
 };
 
-const RequestedHelpInterface = ({ handleCancelRequest, handleFulfilled }) => {
+const RequestedHelpInterface = ({
+  handleCancelRequest,
+  handleFulfilled,
+  isOnline,
+}) => {
   const useStyles = makeStyles(({ breakpoints, spacing }) => ({
     heading: {
       textAlign: "center",
@@ -640,7 +671,9 @@ const RequestedHelpInterface = ({ handleCancelRequest, handleFulfilled }) => {
       </CardActionArea>
       <CardActions>
         <Button
-          onClick={handleCancelRequest}
+          onClick={() => {
+            return isOnline ? handleCancelRequest() : noInternetPopup();
+          }}
           variant="contained"
           size="large"
           color="secondary"
@@ -649,7 +682,9 @@ const RequestedHelpInterface = ({ handleCancelRequest, handleFulfilled }) => {
           Cancel Request
         </Button>
         <Button
-          onClick={handleFulfilled}
+          onClick={() => {
+            return isOnline ? handleFulfilled() : noInternetPopup();
+          }}
           variant="contained"
           size="large"
           color="secondary"
@@ -798,7 +833,6 @@ const Map = (props) => {
             setIsOnline(false);
           });
       } else {
-        console.log("OFFLINE");
         setIsOnline(false);
       }
     };
@@ -1111,7 +1145,11 @@ const Map = (props) => {
         <span style={{ margin: theme.spacing(1) }}>
           <Button
             onClick={() => {
-              auth.signOut();
+              if (isOnline) {
+                auth.signOut();
+              } else {
+                noInternetPopup();
+              }
             }}
             color="black"
             style={{ fontSize: "1.2rem" }}
@@ -1252,17 +1290,26 @@ const Map = (props) => {
                 handleHelpingOthers={handleHelpingOthers}
                 user={user}
                 location={location}
+                isOnline={isOnline}
               />
             ) : (
               <></>
             )}
             {isHelping ? (
-              <RequesterMarker userLocation={location} requestDoc={request} />
+              <RequesterMarker
+                userLocation={location}
+                requestDoc={request}
+                isOnline={isOnline}
+              />
             ) : (
               <></>
             )}
             {requestedHelp ? (
-              <HelperMarker userLocation={location} requestDoc={request} />
+              <HelperMarker
+                userLocation={location}
+                requestDoc={request}
+                isOnline={isOnline}
+              />
             ) : (
               <></>
             )}
@@ -1300,7 +1347,9 @@ const Map = (props) => {
                     fontSize: "1.75rem",
                     textTransform: "none",
                   }}
-                  onClick={handleRequest}
+                  onClick={() => {
+                    return isOnline ? handleRequest() : noInternetPopup();
+                  }}
                 >
                   Request help
                 </Button>
@@ -1324,6 +1373,7 @@ const Map = (props) => {
                 <HelpingInterface
                   handleCancelHelp={handleCancelHelp}
                   requestDoc={request}
+                  isOnline={isOnline}
                 />
                 <RequesterCard requestDoc={request} />
               </div>
@@ -1337,6 +1387,7 @@ const Map = (props) => {
                 <RequestedHelpInterface
                   handleCancelRequest={handleCancelRequest}
                   handleFulfilled={handleFulfilled}
+                  isOnline={isOnline}
                 />
                 <HelperCard requestDoc={request} />
               </div>
